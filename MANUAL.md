@@ -9,6 +9,17 @@ This section is useful for user type 3-5.
 {bdg-link-primary-line}`Included in TeachBooks Favourites <https://teachbooks.io/manual/features/favourites.html>`
 ````
 
+# Gated Directives
+
 ```{include} README.md
+:start-after: <!-- Start content -->
 :end-before: <!-- End configuration -->
+```
+
+## Examples
+
+Still to do.
+
+```{include} README.md
+:start-after: <!-- Start contribute -->
 ```

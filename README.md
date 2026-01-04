@@ -1,5 +1,5 @@
 # Sphinx Gated Directives
-
+<!-- Start content -->
 This package is an extension for Sphinx that creates a start directive and an end directive for every registered class-based directive.
 
 ## What does it do?
@@ -95,7 +95,7 @@ sphinx:
     sphinx_gated_directives:
       suffix_start: start    # Suffix for the start directive
       suffix_end: end        # Suffix for the end directive
-      suffix_separator: -     # Separator between the original directive name and the suffix
+      suffix_separator: '-'     # Separator between the original directive name and the suffix
       override_existing: false  # Whether to override existing gated directives with the same name
 ```
 
