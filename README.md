@@ -1,17 +1,17 @@
 # Sphinx Gated Directives
 
-This package is an extension for Sphinx that creates a '-start' companion and a '-end' companion for every registered class-based directive.
+This package is an extension for Sphinx that creates a start directive and an end directive for every registered class-based directive.
 
 ## What does it do?
 
 This extension performs the following steps:
 1. It scans the Sphinx environment for all registered class-based directives.
 2. For each directive found, it automatically registers two new directives:
-   - A *start* directive that marks the beginning of a block.
-   - An *end* directive that marks the end of a block.
+   - A **start** directive that marks the beginning of a block.
+   - An **end** directive that marks the end of a block.
 3. On build time, it processes these start and end directives to ensure that content between them is handled correctly.
 
-For example, if you have a directive called `warning`, this extension will create (with default settings) two new directives: `warning-start` and `warning-end`. The code:
+For example, if you have a directive called `warning`, this extension will create (with _default settings_) two new directives: `warning-start` and `warning-end`. The code:
 
 ```markdown
 :::{warning}
