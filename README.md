@@ -46,6 +46,13 @@ This allows two things:
 1. More granular control over where the directive starts and ends, which can be useful in complex documents. This is similar to how HTML tags and LaTeX environments work.
 2. The ability to nest directives more easily, as the start and end markers can be placed independently. A major benefit of this is that it allows for nesting of code-cells.
 
+<!-- Start caution -->
+
+> [!CAUTION]
+> Some directives parse the content inside the directive. If that content is moved between the start and end directives, it may not be parsed as expected, as it will be parsed separately. Please see to the [Examples](#examples) section for more details.
+
+<!-- End caution -->
+
 ## Installation
 To use this extension, follow these steps:
 
@@ -116,12 +123,13 @@ Per key the meanings are:
   - If `true`, all existing gated directives will be overridden.
   - If a string or a list of strings, only the existing gated directives with names in the list/string will be overridden.
 
- > [!WARNING]
- > Setting `override_existing` to anything other than `false` may lead to unexpected behavior if those directives are already in use.
- > 
- > Use with caution.
-
 <!-- End configuration -->
+
+
+> [!WARNING]
+> Setting `override_existing` to anything other than `false` may lead to unexpected behavior if those directives are already in use.
+> 
+> Use with caution.
 
 ## Examples
 
