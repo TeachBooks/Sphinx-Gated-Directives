@@ -107,7 +107,7 @@ A benefit of the gated syntax is that the end of a directive can more easily be 
 
 ### Nested code
 
-Gated directives allow the use of nesting of code cells inside other directives. Code cells must alwways be at the lop level of Jupyter Notebooks (`.ipynb`) and Text-based Notebooks (`.md`).
+Gated directives allow the use of nesting of code cells inside other directives. Code cells must always be at the top level of Jupyter Notebooks (`.ipynb`) and Text-based Notebooks (`.md`).
 
 **Syntax**
 
@@ -147,6 +147,47 @@ for i in range(start, end):
 :::{prf:algorithm-end}
 :::
 
+Another benefit of the gated syntax is that code cells can be nested inside a `figure` directive:
+
+````markdown
+:::{figure-start} images/nothing.svg
+:name: figure-label
+:alt: Nothing
+:align: center
+
+This is a figure that contains some code.
+:::
+
+```{code-cell} ipython3
+a = "This is some"
+b = "Python code"
+c = "that should be inside the figure,"
+d = "above the caption."
+print(f"{a} {b} {c} {d}")
+```
+
+:::{figure-end}
+:::
+````
+
+:::{figure-start} images/nothing.svg
+:name: figure-label
+:alt: Nothing
+:align: center
+
+This is a figure that contains some code.
+:::
+
+```{code-cell} ipython3
+a = "This is some"
+b = "Python code"
+c = "that should be inside the figure,"
+d = "above the caption."
+print(f"{a} {b} {c} {d}")
+```
+
+:::{figure-end}
+:::
 
 ```{include} README.md
 :start-after: <!-- Start contribute -->
