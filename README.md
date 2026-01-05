@@ -82,7 +82,7 @@ sphinx:
         .
         .
         .
-        - sphinx_iframes
+        - sphinx_gated_directives
         .
         .
         .
