@@ -23,7 +23,7 @@ This section is useful for user type 3-5.
 ```
 
 > [!CAUTION]
-> Some directives parse the content inside the directive. If that content is moved between the start and end directives, it may not be parsed as expected, as it will be parsed separately. Please see to the [Examples](#examples) section for more details.
+> Some directives parse the content inside the directive. If that content is moved between the start and end directives, it may not be parsed as expected, as it will be parsed separately.
 
 ```{include} README.md
 :start-after: <!-- End caution -->
@@ -147,15 +147,16 @@ for i in range(start, end):
 :::{prf:algorithm-end}
 :::
 
-Another benefit of the gated syntax is that code cells can be nested inside a `figure` directive:
+Another benefit of the gated syntax is that any content, such as admonitions and code cells can be nested inside, for example, a `figure` directive:
 
 ````markdown
 :::{figure-start} images/nothing.svg
 :name: figure-label
 :alt: Nothing
-:align: center
+:align: left
+:width: 100%
 
-This is a figure that contains some code.
+This is a figure that contains some code and an admonition.
 :::
 
 ```{code-cell} ipython3
@@ -166,6 +167,12 @@ d = "above the caption."
 print(f"{a} {b} {c} {d}")
 ```
 
+```{prf:axiom} Occam's Razor
+:label: axiom-occam
+
+Entities must not be multiplied beyond necessity.
+```
+
 :::{figure-end}
 :::
 ````
@@ -173,9 +180,10 @@ print(f"{a} {b} {c} {d}")
 :::{figure-start} images/nothing.svg
 :name: figure-label
 :alt: Nothing
-:align: center
+:align: left
+:width: 100%
 
-This is a figure that contains some code.
+This is a figure that contains some code and an admonition.
 :::
 
 ```{code-cell} ipython3
@@ -184,6 +192,12 @@ b = "Python code"
 c = "that should be inside the figure,"
 d = "above the caption."
 print(f"{a} {b} {c} {d}")
+```
+
+```{prf:axiom} Occam's Razor
+:label: axiom-occam
+
+Entities must not be multiplied beyond necessity.
 ```
 
 :::{figure-end}
