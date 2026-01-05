@@ -49,7 +49,7 @@ This allows two things:
 <!-- Start caution -->
 
 > [!CAUTION]
-> Some directives parse the content inside the directive. If that content is moved between the start and end directives, it may not be parsed as expected, as it will be parsed separately. Please see to the [Examples](#examples) section for more details.
+> Some directives parse the content inside the directive. If that content is moved between the start and end directives, it may not be parsed as expected, as it will be parsed separately.
 
 <!-- End caution -->
 
