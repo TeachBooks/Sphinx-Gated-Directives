@@ -180,8 +180,6 @@ Entities must not be multiplied beyond necessity.
 :::{figure-start} images/nothing.svg
 :name: figure-label
 :alt: Nothing
-:align: left
-:width: 100%
 
 This is a figure that contains some code and an admonition.
 :::
