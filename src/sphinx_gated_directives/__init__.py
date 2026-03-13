@@ -100,6 +100,10 @@ def _get_unified_registry(app=None) -> Dict[str, object]:
 def _copy_option_spec(option_spec):
     return copy.copy(option_spec) if isinstance(option_spec, dict) else option_spec
 
+def _is_missing_content_error(exc: Exception) -> bool:
+    # Docutils typically reports this exact phrase when assert_has_content() fails.
+    return "Content block expected for the" in str(exc)
+
 def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directive]:
     
     attrs = {}
@@ -121,21 +125,32 @@ def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directiv
         current_name = self.name
         original_content = self.content
         content_was_empty = len(self.content) == 0
+        used_placeholder = False
 
-        # Some directives assert that content is non-empty in run().
-        # Inject a hidden comment so empty *-start blocks can still be parsed.
-        if content_was_empty:
+        # First attempt: preserve original semantics for directives that accept empty content.
+        try:
+            self.name = orig_name  # temporarily set to original for base run()
+            children = base_cls.run(self)
+        except Exception as first_exc:
+            # Fallback only for directives that fail specifically on missing content.
+            if not (content_was_empty and _is_missing_content_error(first_exc)):
+                raise
+
+            used_placeholder = True
             source = getattr(self.state.document, "current_source", "")
             self.content = StringList([EMPTY_START_PLACEHOLDER], source=source)
-
-        self.name = orig_name  # temporarily set to original for base run()
-        try:
             children = base_cls.run(self)
         finally:
             self.name = current_name  # restore
             self.content = original_content
 
-        if content_was_empty:
+        if not isinstance(children, list):
+            if isinstance(children, Iterable):
+                children = list(children)
+            else:
+                children = [children]
+
+        if used_placeholder:
             def _strip_placeholder_comments(node: nodes.Node) -> None:
                 placeholder_texts = {
                     EMPTY_START_PLACEHOLDER,
@@ -149,10 +164,15 @@ def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directiv
                         return current.astext().strip() in placeholder_texts
 
                     removed_placeholder = False
-                    for child in list(getattr(current, "children", [])):
+                    existing_children = list(getattr(current, "children", []))
+                    kept_children = []
+                    for child in existing_children:
                         if _remove_placeholder_subtree(child):
-                            current.remove(child)
                             removed_placeholder = True
+                        else:
+                            kept_children.append(child)
+                    if removed_placeholder and hasattr(current, "children"):
+                        setattr(current, "children", kept_children)
 
                     if removed_placeholder and len(getattr(current, "children", [])) == 0:
                         return True
@@ -160,14 +180,9 @@ def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directiv
 
                 _remove_placeholder_subtree(node)
 
-            for child in children if isinstance(children, list) else [children]:
+            for child in children:
                 _strip_placeholder_comments(child)
 
-        if not isinstance(children, list):
-            if isinstance(children, Iterable):
-                children = list(children)
-            else:
-                children = [children]
         # create a start_node and add all result nodes as its children
         start_node_instance = start_node()
         start_node_instance += children
