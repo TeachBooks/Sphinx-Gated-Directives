@@ -39,12 +39,14 @@ logger = logging.getLogger(__name__)
 from docutils import nodes
 from docutils.parsers.rst import Directive
 from docutils.parsers.rst import directives as du_directives
+from docutils.statemachine import StringList
 
 from dataclasses import dataclass, field
 
 SUFFIX_START = "start"
 SUFFIX_END = "end"
 SUFFIX_SEPARATOR = "-"
+EMPTY_START_PLACEHOLDER = ".. sphinx-gated-directives-empty-start"
 
 def _is_class_directive(obj) -> bool:
     return inspect.isclass(obj) and issubclass(obj, Directive)
@@ -117,9 +119,36 @@ def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directiv
 
     def run(self: Directive):
         current_name = self.name
+        original_content = self.content
+        content_was_empty = len(self.content) == 0
+
+        # Some directives assert that content is non-empty in run().
+        # Inject a hidden comment so empty *-start blocks can still be parsed.
+        if content_was_empty:
+            source = getattr(self.state.document, "current_source", "")
+            self.content = StringList([EMPTY_START_PLACEHOLDER], source=source)
+
         self.name = orig_name  # temporarily set to original for base run()
-        children = base_cls.run(self)
-        self.name = current_name  # restore
+        try:
+            children = base_cls.run(self)
+        finally:
+            self.name = current_name  # restore
+            self.content = original_content
+
+        if content_was_empty:
+            def _strip_placeholder_comments(node: nodes.Node) -> None:
+                for child in list(getattr(node, "children", [])):
+                    text = child.astext().strip() if hasattr(child, "astext") else ""
+                    is_placeholder_comment = isinstance(child, nodes.comment) and text == "sphinx-gated-directives-empty-start"
+                    is_placeholder_paragraph = isinstance(child, nodes.paragraph) and text == EMPTY_START_PLACEHOLDER
+                    if is_placeholder_comment or is_placeholder_paragraph:
+                        node.remove(child)
+                    else:
+                        _strip_placeholder_comments(child)
+
+            for child in children if isinstance(children, list) else [children]:
+                _strip_placeholder_comments(child)
+
         if not isinstance(children, list):
             if isinstance(children, Iterable):
                 children = list(children)
