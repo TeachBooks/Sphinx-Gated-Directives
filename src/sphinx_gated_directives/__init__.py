@@ -39,7 +39,6 @@ logger = logging.getLogger(__name__)
 from docutils import nodes
 from docutils.parsers.rst import Directive
 from docutils.parsers.rst import directives as du_directives
-from docutils.parsers.rst.directives.admonitions import BaseAdmonition
 from docutils.statemachine import StringList
 
 from dataclasses import dataclass, field
@@ -101,15 +100,41 @@ def _get_unified_registry(app=None) -> Dict[str, object]:
 def _copy_option_spec(option_spec):
     return copy.copy(option_spec) if isinstance(option_spec, dict) else option_spec
 
-def _is_missing_content_error(exc: Exception) -> bool:
-    # Docutils wording can vary slightly by parser/version; match the core message.
-    msg = str(exc).lower()
-    return "content block expected" in msg and "none found" in msg
+def _is_figure_like_directive(base_cls: type[Directive]) -> bool:
+    mro_names = [cls.__name__.lower() for cls in base_cls.__mro__]
+    return any("figure" in name for name in mro_names)
 
 def _needs_placeholder_before_first_run(base_cls: type[Directive]) -> bool:
-    # BaseAdmonition subclasses report missing-content problems before we can retry,
-    # so avoid the first failing call entirely for this directive family.
-    return issubclass(base_cls, BaseAdmonition)
+    # Keep empty-content semantics for figure-like directives (e.g., :number: behavior).
+    return not _is_figure_like_directive(base_cls)
+
+def _remove_placeholder_subtree(current: nodes.Node, placeholder_texts: set[str]) -> bool:
+    if isinstance(current, nodes.Text):
+        return str(current).strip() in placeholder_texts
+    if isinstance(current, nodes.comment):
+        return current.astext().strip() in placeholder_texts
+
+    removed_placeholder = False
+    existing_children = list(getattr(current, "children", []))
+    kept_children = []
+    for child in existing_children:
+        if _remove_placeholder_subtree(child, placeholder_texts):
+            removed_placeholder = True
+        else:
+            kept_children.append(child)
+    if removed_placeholder and hasattr(current, "children"):
+        setattr(current, "children", kept_children)
+
+    if removed_placeholder and len(getattr(current, "children", [])) == 0:
+        return True
+    return False
+
+def _strip_placeholder_nodes(node: nodes.Node) -> None:
+    placeholder_texts = {
+        EMPTY_START_PLACEHOLDER,
+        "sphinx-gated-directives-empty-start",
+    }
+    _remove_placeholder_subtree(node, placeholder_texts)
 
 def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directive]:
     
@@ -132,25 +157,14 @@ def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directiv
         current_name = self.name
         original_content = self.content
         content_was_empty = not any(str(line).strip() for line in self.content)
-        used_placeholder = False
+        used_placeholder = content_was_empty and _needs_placeholder_before_first_run(base_cls)
 
-        if content_was_empty and _needs_placeholder_before_first_run(base_cls):
-            used_placeholder = True
+        if used_placeholder:
             source = getattr(self.state.document, "current_source", "")
             self.content = StringList([EMPTY_START_PLACEHOLDER], source=source)
 
-        # First attempt: preserve original semantics for directives that accept empty content.
+        self.name = orig_name  # temporarily set to original for base run()
         try:
-            self.name = orig_name  # temporarily set to original for base run()
-            children = base_cls.run(self)
-        except Exception as first_exc:
-            # Fallback only for directives that fail specifically on missing content.
-            if not (content_was_empty and _is_missing_content_error(first_exc)):
-                raise
-
-            used_placeholder = True
-            source = getattr(self.state.document, "current_source", "")
-            self.content = StringList([EMPTY_START_PLACEHOLDER], source=source)
             children = base_cls.run(self)
         finally:
             self.name = current_name  # restore
@@ -163,37 +177,8 @@ def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directiv
                 children = [children]
 
         if used_placeholder:
-            def _strip_placeholder_comments(node: nodes.Node) -> None:
-                placeholder_texts = {
-                    EMPTY_START_PLACEHOLDER,
-                    "sphinx-gated-directives-empty-start",
-                }
-
-                def _remove_placeholder_subtree(current: nodes.Node) -> bool:
-                    if isinstance(current, nodes.Text):
-                        return str(current).strip() in placeholder_texts
-                    if isinstance(current, nodes.comment):
-                        return current.astext().strip() in placeholder_texts
-
-                    removed_placeholder = False
-                    existing_children = list(getattr(current, "children", []))
-                    kept_children = []
-                    for child in existing_children:
-                        if _remove_placeholder_subtree(child):
-                            removed_placeholder = True
-                        else:
-                            kept_children.append(child)
-                    if removed_placeholder and hasattr(current, "children"):
-                        setattr(current, "children", kept_children)
-
-                    if removed_placeholder and len(getattr(current, "children", [])) == 0:
-                        return True
-                    return False
-
-                _remove_placeholder_subtree(node)
-
             for child in children:
-                _strip_placeholder_comments(child)
+                _strip_placeholder_nodes(child)
 
         # create a start_node and add all result nodes as its children
         start_node_instance = start_node()
