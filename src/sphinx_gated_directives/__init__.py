@@ -101,8 +101,9 @@ def _copy_option_spec(option_spec):
     return copy.copy(option_spec) if isinstance(option_spec, dict) else option_spec
 
 def _is_missing_content_error(exc: Exception) -> bool:
-    # Docutils typically reports this exact phrase when assert_has_content() fails.
-    return "Content block expected for the" in str(exc)
+    # Docutils wording can vary slightly by parser/version; match the core message.
+    msg = str(exc).lower()
+    return "content block expected" in msg and "none found" in msg
 
 def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directive]:
     
@@ -124,7 +125,7 @@ def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directiv
     def run(self: Directive):
         current_name = self.name
         original_content = self.content
-        content_was_empty = len(self.content) == 0
+        content_was_empty = not any(str(line).strip() for line in self.content)
         used_placeholder = False
 
         # First attempt: preserve original semantics for directives that accept empty content.
