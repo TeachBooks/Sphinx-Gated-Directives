@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 from docutils import nodes
 from docutils.parsers.rst import Directive
 from docutils.parsers.rst import directives as du_directives
+from docutils.parsers.rst.directives.admonitions import BaseAdmonition
 from docutils.statemachine import StringList
 
 from dataclasses import dataclass, field
@@ -105,6 +106,11 @@ def _is_missing_content_error(exc: Exception) -> bool:
     msg = str(exc).lower()
     return "content block expected" in msg and "none found" in msg
 
+def _needs_placeholder_before_first_run(base_cls: type[Directive]) -> bool:
+    # BaseAdmonition subclasses report missing-content problems before we can retry,
+    # so avoid the first failing call entirely for this directive family.
+    return issubclass(base_cls, BaseAdmonition)
+
 def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directive]:
     
     attrs = {}
@@ -127,6 +133,11 @@ def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directiv
         original_content = self.content
         content_was_empty = not any(str(line).strip() for line in self.content)
         used_placeholder = False
+
+        if content_was_empty and _needs_placeholder_before_first_run(base_cls):
+            used_placeholder = True
+            source = getattr(self.state.document, "current_source", "")
+            self.content = StringList([EMPTY_START_PLACEHOLDER], source=source)
 
         # First attempt: preserve original semantics for directives that accept empty content.
         try:
