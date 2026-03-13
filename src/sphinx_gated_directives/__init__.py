@@ -137,14 +137,28 @@ def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directiv
 
         if content_was_empty:
             def _strip_placeholder_comments(node: nodes.Node) -> None:
-                for child in list(getattr(node, "children", [])):
-                    text = child.astext().strip() if hasattr(child, "astext") else ""
-                    is_placeholder_comment = isinstance(child, nodes.comment) and text == "sphinx-gated-directives-empty-start"
-                    is_placeholder_paragraph = isinstance(child, nodes.paragraph) and text == EMPTY_START_PLACEHOLDER
-                    if is_placeholder_comment or is_placeholder_paragraph:
-                        node.remove(child)
-                    else:
-                        _strip_placeholder_comments(child)
+                placeholder_texts = {
+                    EMPTY_START_PLACEHOLDER,
+                    "sphinx-gated-directives-empty-start",
+                }
+
+                def _remove_placeholder_subtree(current: nodes.Node) -> bool:
+                    if isinstance(current, nodes.Text):
+                        return str(current).strip() in placeholder_texts
+                    if isinstance(current, nodes.comment):
+                        return current.astext().strip() in placeholder_texts
+
+                    removed_placeholder = False
+                    for child in list(getattr(current, "children", [])):
+                        if _remove_placeholder_subtree(child):
+                            current.remove(child)
+                            removed_placeholder = True
+
+                    if removed_placeholder and len(getattr(current, "children", [])) == 0:
+                        return True
+                    return False
+
+                _remove_placeholder_subtree(node)
 
             for child in children if isinstance(children, list) else [children]:
                 _strip_placeholder_comments(child)
