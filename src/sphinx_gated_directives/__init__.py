@@ -123,8 +123,7 @@ def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directiv
         if base_cls.__module__ in NONEMPTY_CONTENT_MODULES and not self.content:
             # add some empty content to avoid errors
             self.content = [""]
-        with logging.pending_logging():
-            children = base_cls.run(self)
+        children = base_cls.run(self)
 
         self.name = current_name  # restore
         if not isinstance(children, list):
