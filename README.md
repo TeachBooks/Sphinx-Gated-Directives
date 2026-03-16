@@ -53,6 +53,21 @@ This allows two things:
 
 <!-- End caution -->
 
+## Directives with empty content
+
+A final caveat must be told: some modules define directives that log Sphinx errors, but do not raise Exceptions, in case no content is found. For example, the module `docutils.parsers.rst.directives.admonitions` raises a Sphinx error with the message
+
+```text
+ERROR: Content block expected for the "admonition" directive; none found.
+```
+
+when the directive `admonition` is used without content. Other directives from those same modules often also log the same error. To avoid errors for the start directive, which may contain no content, this extension checks if the original directive is part of a module listed in the variable `NONEMPTY_CONTENT_MODULES` defined within [`__init__.py'](https://github.com/TeachBooks/Sphinx-Gated-Directives/blob/main/src/sphinx_gated_directives/__init__.py#L49) and if the content is empty, adds the dummy content `""` to the directive. This allows the start directive to be used without content, while still allowing the original directive to be used as usual.
+
+Currently the modules listed in `NONEMPTY_CONTENT_MODULES` are:
+- `docutils.parsers.rst.directives.admonitions`
+
+If you as a user encounter an error for a directive that is not listed in `NONEMPTY_CONTENT_MODULES`, please report it to the developers, so that it can be added to the list. You can also create a pull request to add the module to the list yourself.
+
 ## Installation
 To use this extension, follow these steps:
 

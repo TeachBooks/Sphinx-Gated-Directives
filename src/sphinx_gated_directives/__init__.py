@@ -46,6 +46,8 @@ SUFFIX_START = "start"
 SUFFIX_END = "end"
 SUFFIX_SEPARATOR = "-"
 
+NONEMPTY_CONTENT_MODULES = ["docutils.parsers.rst.directives.admonitions"]
+
 def _is_class_directive(obj) -> bool:
     return inspect.isclass(obj) and issubclass(obj, Directive)
 
@@ -118,7 +120,11 @@ def make_start_class(orig_name: str, base_cls: type[Directive]) -> type[Directiv
     def run(self: Directive):
         current_name = self.name
         self.name = orig_name  # temporarily set to original for base run()
+        if base_cls.__module__ in NONEMPTY_CONTENT_MODULES and not self.content:
+            # add some empty content to avoid errors
+            self.content = [""]
         children = base_cls.run(self)
+
         self.name = current_name  # restore
         if not isinstance(children, list):
             if isinstance(children, Iterable):
