@@ -46,7 +46,7 @@ SUFFIX_START = "start"
 SUFFIX_END = "end"
 SUFFIX_SEPARATOR = "-"
 
-NONEMPTY_CONTENT_MODULES = ["docutils.parsers.rst.directives.admonitions"]
+NONEMPTY_CONTENT_MODULES = ["docutils.parsers.rst.directives.admonitions","docutils.parsers.rst.directives.body","sphinx_book_theme.directives"]
 
 def _is_class_directive(obj) -> bool:
     return inspect.isclass(obj) and issubclass(obj, Directive)
