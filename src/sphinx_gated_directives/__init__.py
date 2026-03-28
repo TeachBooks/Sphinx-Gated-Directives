@@ -239,7 +239,8 @@ def _should_skip_name(orig_name: str, cfg: dict) -> bool:
 def _register_new_directives(app, env, docnames):
 
     # get options and add missing default values
-    cfg = app.config.sphinx_gated_directives
+    # Work on a copy so we do not mutate app.config.sphinx_gated_directives.
+    cfg = dict(app.config.sphinx_gated_directives)
     if "override_existing" not in cfg:
         cfg["override_existing"] = False
     elif isinstance(cfg["override_existing"], str):
